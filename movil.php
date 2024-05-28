@@ -15,7 +15,11 @@ if ($conn->connect_error) {
 }
 
 // Obtener el ID del móvil de la URL
-$idmovil = $_GET["id"];
+if (isset($_GET["id"])) {
+    $idmovil = mysqli_real_escape_string($conn, $_GET["id"]);
+} else {
+    die("Error: No se proporcionó el ID del móvil.");
+}
 
 // Realizar una consulta SQL
 $sql = "SELECT movil.*, sistema_operativo.nombre_os, pantalla.resolucion, tec_pantalla.tecnologia 
@@ -32,6 +36,22 @@ if ($result->num_rows > 0) {
 } else {
     echo "No se encontró el móvil";
 }
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!isset($_SESSION["comparar"])) {
+        $_SESSION["comparar"] = array();
+    }
+    $key = array_search($idmovil, $_SESSION["comparar"]);
+    if ($key !== false) {
+        // Eliminar de la comparativa
+        unset($_SESSION["comparar"][$key]);
+        $_SESSION["comparar"] = array_values($_SESSION["comparar"]); // Reindexar el array
+    } else {
+        // Añadir a la comparativa
+        array_push($_SESSION["comparar"], $idmovil);
+    }
+}
+
 $conn->close();
 ?>
 
@@ -141,6 +161,15 @@ $conn->close();
 
 <div class="container">
     <?php if ($movil): ?>
+        <form method="post" action="<?php echo $_SERVER["PHP_SELF"] . '?id=' . $idmovil;?>">
+            <input type="hidden" name="idmovil" value="<?php echo $idmovil; ?>">
+            <input type="submit" value="<?php echo (isset($_SESSION["comparar"]) && in_array($idmovil, $_SESSION["comparar"])) ? 'Eliminar de la comparativa' : 'Añadir a la comparativa'; ?>">
+        </form>
+        <?php
+        if (isset($_SESSION["comparar"]) && count($_SESSION["comparar"]) >= 2) {
+            echo '<a href="comparar.php">Comparar</a>';
+        }
+        ?>
         <h1>Especificaciones del Móvil</h1>
         <table class="specs-table">
             <tr>
