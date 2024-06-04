@@ -1,5 +1,13 @@
 <?php
-session_start(); // Iniciar la sesión
+session_start();
+
+if (!isset($_SESSION["idusuarios"])) {
+    header("Location: login.php");
+    exit();
+}
+
+// Obtén el ID del tema de la URL
+$idtema_foro = $_GET["id"];
 
 $servername = "localhost";
 $username = "root";
@@ -14,33 +22,18 @@ if ($conn->connect_error) {
     die("Conexión fallida: " . $conn->connect_error);
 }
 
-$moviles = array();
-if (isset($_SESSION["comparar"])) {
-    foreach ($_SESSION["comparar"] as $idmovil) {
-        $idmovil = mysqli_real_escape_string($conn, $idmovil);
-        $sql = "SELECT movil.*, sistema_operativo.nombre_os, pantalla.resolucion, tec_pantalla.tecnologia 
-                FROM movil 
-                INNER JOIN sistema_operativo ON movil.sistema_operativo_idsistema_operativo = sistema_operativo.idsistema_operativo 
-                INNER JOIN pantalla ON movil.pantalla_idpantalla = pantalla.idpantalla 
-                INNER JOIN tec_pantalla ON pantalla.tec_pantalla_idtec_pantalla = tec_pantalla.idtec_pantalla 
-                WHERE idmovil = $idmovil";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-            array_push($moviles, $result->fetch_assoc());
-        }
-    }
-}
-
-$conn->close();
+// Realizar una consulta SQL para obtener los detalles del tema
+$sql = "SELECT * FROM tema_foro WHERE idtema_foro = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $idtema_foro);
+$stmt->execute();
+$result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comparar Móviles</title>
-    <style>
+<style>
         body {
             font-family: Arial, Helvetica, sans-serif;
             background-color: #f0f2f5;
@@ -179,35 +172,47 @@ $conn->close();
 </head>
 <body>
 
-<div class="navbar">
-    <a href="moviles.php" class="btn left">Volver</a>
-    <?php
-    if (isset($_SESSION["user_name"])) {
-        echo "<p class='right'>" . $_SESSION["user_name"] . " </p>";
-    } else {
-        echo "<a href='login.php' class='right'>Iniciar sesión</a>";
-    }
-    ?>
-</div>
+
 
 <div class="container">
-    <?php foreach ($moviles as $movil): ?>
-        <div class="movil">
-            <h2><?php echo htmlspecialchars($movil["modelo"]); ?></h2>
-            <p>Tamaño de pantalla: <?php echo htmlspecialchars($movil["tamaño_pantalla"]); ?></p>
-            <p>Almacenamiento: <?php echo htmlspecialchars($movil["almacenamiento"]); ?></p>
-            <p>Tipo de almacenamiento: <?php echo htmlspecialchars($movil["tipo_almacenamiento"]); ?></p>
-            <p>RAM: <?php echo htmlspecialchars($movil["ram"]); ?></p>
-            <p>Tipo de RAM: <?php echo htmlspecialchars($movil["tipo_ram"]); ?></p>
-            <p>Cámara principal: <?php echo htmlspecialchars($movil["can_principal"]); ?></p>
-            <p>Resolución de la cámara principal: <?php echo htmlspecialchars($movil["resolucion_principal"]); ?></p>
-            <!-- Agrega aquí el resto de las especificaciones del móvil -->
-        </div>
-    <?php endforeach; ?>
+    <?php
+    if ($result->num_rows > 0) {
+        // Mostrar los detalles del tema
+        $row = $result->fetch_assoc();
+        echo "<h1>" . htmlspecialchars($row["titulo"]) . "</h1>";
+        echo "<p>" . htmlspecialchars($row["tema"]) . "</p>";
+    } else {
+        echo "No se encontró el tema";
+    }
+
+    // Obtener y mostrar los comentarios
+    $sqlComentarios = "SELECT * FROM comentario_foro WHERE tema_foro_idtema_foro = ?";
+    $stmtComentarios = $conn->prepare($sqlComentarios);
+    $stmtComentarios->bind_param("i", $idtema_foro);
+    $stmtComentarios->execute();
+    $resultComentarios = $stmtComentarios->get_result();
+
+    echo "<h2>Comentarios</h2>";
+    while ($rowComentario = $resultComentarios->fetch_assoc()) {
+        echo "<div class='comentario'>";
+        echo "<p><strong>" . htmlspecialchars($rowComentario["usuarios_idusuarios"]) . "</strong> - " . htmlspecialchars($rowComentario["fecha_creacion"]) . "</p>";
+        echo "<p>" . htmlspecialchars($rowComentario["contenido_coment"]) . "</p>";
+        echo "</div>";
+    }
+
+    
+
+    $stmtComentarios->close();
+    $stmt->close();
+    $conn->close();
+    ?>
+
+<form method="post" action="nuevo_comentario.php?id=<?php echo $idtema_foro; ?>">
+    <textarea name="comentario" placeholder="Escribe tu comentario"></textarea>
+    <button type="submit">Publicar Comentario</button>
+</form>
+
 </div>
-<footer>
-    <p>Derechos reservados &copy; 2024</p>
-</footer>
 
 </body>
 </html>

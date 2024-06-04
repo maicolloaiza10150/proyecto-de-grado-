@@ -13,9 +13,13 @@ $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
     die("Conexión fallida: " . $conn->connect_error);
 }
-
+ 
 // Obtener el ID del móvil de la URL
-$idmovil = $_GET["id"];
+if (isset($_GET["id"])) {
+    $idmovil = mysqli_real_escape_string($conn, $_GET["id"]);
+} else {
+    die("Error: No se proporcionó el ID del móvil.");
+}
 
 // Realizar una consulta SQL
 $sql = "SELECT movil.*, sistema_operativo.nombre_os, pantalla.resolucion, tec_pantalla.tecnologia 
@@ -32,6 +36,22 @@ if ($result->num_rows > 0) {
 } else {
     echo "No se encontró el móvil";
 }
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!isset($_SESSION["comparar"])) {
+        $_SESSION["comparar"] = array();
+    }
+    $key = array_search($idmovil, $_SESSION["comparar"]);
+    if ($key !== false) {
+        // Eliminar de la comparativa
+        unset($_SESSION["comparar"][$key]);
+        $_SESSION["comparar"] = array_values($_SESSION["comparar"]); // Reindexar el array
+    } else {
+        // Añadir a la comparativa
+        array_push($_SESSION["comparar"], $idmovil);
+    }
+}
+
 $conn->close();
 ?>
 
@@ -42,61 +62,73 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Especificaciones del Móvil</title>
     <style>
-        /* Reset de márgenes y padding */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Estilo del cuerpo */
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            line-height: 1.6;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
-        /* Estilo de la barra de navegación */
         .navbar {
-            overflow: hidden;
-            background-color: #444;
+            background-color: #ffffff; /* Encabezado */
             padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        .navbar a, .navbar p, .navbar .btn {
-            display: block;
-            color: #f2f2f2;
-            text-align: center;
-            padding: 14px 16px;
+        .navbar .btn {
+            color: white;
+            background-color: #4CAF50;
+            padding: 10px 20px;
             text-decoration: none;
-            font-size: 17px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
         }
 
-        .navbar a:hover, .navbar .btn:hover {
-            background-color: #ddd;
-            color: #444;
-        }
-
-        .navbar .left {
-            float: left;
+        .navbar .btn:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
         }
 
         .navbar .right {
-            float: right;
+            display: flex;
+            align-items: center;
         }
 
-        /* Contenedor principal */
+        .navbar .right p {
+            margin: 0;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .navbar .right img {
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
         .container {
-            max-width: 1200px;
+            flex: 1;
+            max-width: 900px;
             margin: 20px auto;
             padding: 20px;
-            background: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
             border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Estilo del cuadro de especificaciones */
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
         .specs-table {
             width: 100%;
             border-collapse: collapse;
@@ -104,25 +136,65 @@ $conn->close();
         }
 
         .specs-table th, .specs-table td {
-            padding: 10px;
             border: 1px solid #ddd;
+            padding: 12px;
             text-align: left;
         }
 
         .specs-table th {
-            background-color: #f4f4f4;
+            background-color: #f2f2f2;
+            color: #333;
         }
 
-        /* Pie de página */
+        .specs-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .specs-table tr:hover {
+            background-color: #f1f1f1;
+        }
+
         footer {
+            background-color: #45a049;
+            color: white;
             text-align: center;
-            padding: 20px;
-            background-color: #444;
-            color: #fff;
-            position: fixed;
+            padding: 10px 0;
+            position: relative;
             bottom: 0;
             width: 100%;
-            border-top: 1px solid #333;
+            margin-top: auto;
+        }
+
+        .action-buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .action-buttons input[type="submit"], .action-buttons a {
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 15px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .action-buttons input[type="submit"]:hover, .action-buttons a:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        .logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 50px;
         }
     </style>
 </head>
@@ -130,17 +202,34 @@ $conn->close();
 
 <div class="navbar">
     <a href="moviles.php" class="btn left">Volver</a>
-    <?php
-    if (isset($_SESSION["user_name"])) {
-        echo "<p class='right'>" . $_SESSION["user_name"] . " </p>";
-    } else {
-        echo "<a href='login.php' class='right'>Iniciar sesión</a>";
-    }
-    ?>
+    <div class="logo">
+        <img src="imagenes/logo.png" alt="Logo">
+    </div>
+    <div class="right">
+        <?php
+        if (isset($_SESSION["user_name"])) {
+            echo "<img src='imagenes/usuario.ico' alt='Usuario'>";
+            echo "<p>" . $_SESSION["user_name"] . "</p>";
+        } else {
+            echo "<a href='login.php' class='btn'>Iniciar sesión</a>";
+        }
+        ?>
+    </div>
 </div>
 
 <div class="container">
     <?php if ($movil): ?>
+        <div class="action-buttons">
+            <form method="post" action="<?php echo $_SERVER["PHP_SELF"] . '?id=' . $idmovil;?>">
+                <input type="hidden" name="idmovil" value="<?php echo $idmovil; ?>">
+                <input type="submit" value="<?php echo (isset($_SESSION["comparar"]) && in_array($idmovil, $_SESSION["comparar"])) ? 'Eliminar de la comparativa' : 'Añadir a la comparativa'; ?>">
+            </form>
+            <?php
+            if (isset($_SESSION["comparar"]) && count($_SESSION["comparar"]) >= 2) {
+                echo '<a href="comparar.php" class="btn">Comparar</a>';
+            }
+            ?>
+        </div>
         <h1>Especificaciones del Móvil</h1>
         <table class="specs-table">
             <tr>
