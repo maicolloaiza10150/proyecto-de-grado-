@@ -1,5 +1,4 @@
 <?php
-
 session_start();
 
 // Verifica si el usuario ha iniciado sesión
@@ -12,18 +11,7 @@ if (!isset($_SESSION["user_name"]) || !isset($_SESSION["idusuarios"])) {
 $nombreUsuario = $_SESSION["user_name"];
 $idUsuario = $_SESSION["idusuarios"];
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "proyectodb";
-
-// Crear conexión
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verificar conexión
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
-}
+include 'conexion.php';
 
 // Insertar un nuevo tema
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -31,9 +19,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $tema = $_POST["tema"];
     $userId = $_SESSION["idusuarios"];
 
-    $sql = "INSERT INTO tema_foro (titulo, tema, usuarios_idusuarios) VALUES (?, ?, ?)";
+    // Manejo de la imagen
+    $nombreImagen = $_FILES["imagen"]["name"];
+    $rutaTemporal = $_FILES["imagen"]["tmp_name"];
+    $carpetaUsuario = "imagenes/"; // Asegúrate de que esta carpeta exista en tu servidor
+    $rutaDestino = $carpetaUsuario . $nombreImagen;
+
+    // Mueve la imagen a la carpeta del usuario
+    move_uploaded_file($rutaTemporal, $rutaDestino);
+
+    $sql = "INSERT INTO tema_foro (titulo, tema, imagen, usuarios_idusuarios) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssi", $titulo, $tema, $userId);
+    $stmt->bind_param("sssi", $titulo, $tema, $rutaDestino, $userId);
     $stmt->execute();
     $stmt->close();
 
@@ -51,7 +48,6 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuevo Tema</title>
-    <link rel="stylesheet" type="text/css" href="estilos.css">
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -177,38 +173,39 @@ $conn->close();
     </style>
 </head>
 <body>
+    <header class="navbar">
+        <div class="left-buttons">
+            <button type="button" onclick="window.location.href='foro.php'">Volver al Foro</button>
+        </div>
+        <div class="logo">
+            <img src="imagenes/logo.png" alt="Logo">
+        </div>
+        <div class="right-buttons">
+            <!-- Aquí puedes agregar otros botones si es necesario -->
+        </div>
+    </header>
 
-<div class="navbar">
-    <div class="left-buttons">
-        <button type="button" onclick="window.location.href='foro.php'">Volver al Foro</button>
-    </div>
-    <div class="logo">
-        <img src="imagenes/logo.png" alt="Logo"> <!-- Logo en el centro del encabezado -->
-    </div>
-    <div class="right-buttons">
-        <!-- Aquí puedes agregar otros botones si es necesario -->
-    </div>
-</div>
+    <main class="container">
+        <div class="welcome-message">
+            <?php echo "Bienvenido, " . htmlspecialchars($nombreUsuario) . " (ID: " . htmlspecialchars($idUsuario) . ")"; ?>
+        </div>
 
-<div class="welcome-message">
-    <?php echo "Bienvenido, " . htmlspecialchars($nombreUsuario) . " (ID: " . htmlspecialchars($idUsuario) . ")"; ?>
-</div>
+        <form action="nuevo_tema.php" method="post" enctype="multipart/form-data">
+            <label for="titulo"><b>Título</b></label>
+            <input type="text" placeholder="Ingresa el título del tema" name="titulo" required>
 
-<div class="container">
-    <form action="nuevo_tema.php" method="post">
-        <label for="titulo"><b>Título</b></label>
-        <input type="text" placeholder="Ingresa el título del tema" name="titulo" required>
+            <label for="tema"><b>Tema</b></label>
+            <textarea placeholder="Ingresa el contenido del tema" name="tema" required></textarea>
 
-        <label for="tema"><b>Tema</b></label>
-        <textarea placeholder="Ingresa el contenido del tema" name="tema" required></textarea>
+            <label for="imagen"><b>Imagen</b></label>
+            <input type="file" name="imagen" id="imagen">
 
-        <button type="submit">Crear Tema</button>
-    </form>
-</div>
+            <button type="submit">Crear Tema</button>
+        </form>
+    </main>
 
-<footer>
-    <p>Derechos reservados © 2024</p>
-</footer>
-
+    <footer>
+        <p>Derechos reservados © 2024</p>
+    </footer>
 </body>
 </html>

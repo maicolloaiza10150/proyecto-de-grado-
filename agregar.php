@@ -1,25 +1,19 @@
 <?php
 session_start(); // Iniciar la sesión
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "proyectodb";
+include 'conexion.php';
 
-// Crear conexión
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verificar conexión
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
-}
 
 function addMovilData($conn, $newData) {
     $columns = '';
     $values = '';
     foreach ($newData as $key => $value) {
         $columns .= "`$key`, ";
-        $values .= "'$value', ";
+        if($key == 'foto'){
+            $values .= "'". $value ."', ";
+        }else{
+            $values .= "'$value', ";
+        }
     }
     $columns = rtrim($columns, ', ');
     $values = rtrim($values, ', ');
@@ -68,6 +62,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'pantalla_idpantalla' => $_POST['pantalla_idpantalla'],
         'capa_android_idcapa_android' => $_POST['capa_android_idcapa_android'],
     );
+    if(isset($_FILES['imagen'])){
+        $imagen = addslashes(file_get_contents($_FILES['imagen']['tmp_name']));
+        $newData['foto'] = $imagen;
+    }
     addMovilData($conn, $newData);
 }
 ?>
@@ -208,7 +206,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
 
 <div class="navbar">
-    <a href="moviles.php" class="btn left">Volver</a>
+    <a href="index.php" class="btn left">Volver</a>
     <a href="#" class="logo"><img src="imagenes/logo.png" alt="Logo"></a>
     <div class="right">
         <?php
@@ -223,8 +221,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="container">
     <h1>Agregar Móvil</h1>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <table>
+            <!-- Aquí es donde agregas el botón para subir imagen -->
+            <tr>
+                <th>Imagen</th>
+                <td><input type="file" name="imagen"></td>
+            </tr>
             <tr>
                 <th>Modelo</th>
                 <td><input type="text" name="modelo"></td>
@@ -305,7 +308,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <th>Sistema Operativo</th>
                 <td>
                     <select name="sistema_operativo_idsistema_operativo">
-                        <?php echo getOptions($conn, 'sistema_operativo', 'idsistema_operativo', 'nombre_os'); ?>
+                        <?php echo getOptions($conn, 'sistema_operativo', 'idsistema_operativo', 'version'); ?>
                     </select>
                 </td>
             </tr>

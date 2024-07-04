@@ -1,22 +1,8 @@
 <?php
 session_start(); // Iniciar la sesión
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "proyectodb";
+include 'conexion.php';
 
-
-
-// Crear conexión
-$conn = new mysqli($servername, $username, $password, $dbname);
-$mysqli = new mysqli($servername, $username, $password, $dbname);
-
-// Verificar conexión
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
-}
- 
 // Recoger los datos del formulario
 $modelo = $mysqli->real_escape_string($_POST['modelo']);
 $tamaño_pantalla = $mysqli->real_escape_string($_POST['tamaño_pantalla']);

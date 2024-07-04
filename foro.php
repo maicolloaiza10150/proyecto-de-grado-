@@ -1,12 +1,25 @@
 <?php
 session_start();
 
-if (!isset($_SESSION["user_name"])) {
-    $_SESSION["redirect_url"] = "foro.php";
+if (isset($_GET['logout'])) {
+    session_destroy();
     header("Location: login.php");
     exit();
 }
 
+include 'conexion.php';
+
+
+// Realizar una consulta SQL
+$sql = "SELECT * FROM tema_foro";
+if (isset($_GET['search'])) {
+    $search = $_GET['search'];
+    $sql .= " WHERE titulo LIKE '%$search%'";
+}
+
+$result = $conn->query($sql);
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -45,6 +58,12 @@ if (!isset($_SESSION["user_name"])) {
             text-align: center;
             margin-left: -120px; /* Ajusta este valor según tus necesidades */
         }
+
+        .navbar a {
+    color: #000; /* Cambia el color del texto a negro */
+    text-decoration: none;
+}
+
 
         .navbar .logo img {
             height: 40px;
@@ -94,58 +113,59 @@ if (!isset($_SESSION["user_name"])) {
             width: 100%;
             margin-top: auto;
         }
+        .tema img {
+            width: 100px; /* Ajusta este valor según tus necesidades */
+            height: auto;
+        }
     </style>
 </head>
 <body>
+    <header class="navbar">
+        <div class="left-buttons">
+            <button type="button" onclick="window.location.href='nuevo_tema.php'">Agregar Nuevo Tema</button>
+        </div>
+        <button type="button" onclick="window.location.href='index.php'">comparar moviles</button>
+        </div>
+        <div class="logo">
+            <img src="imagenes/logo.png" alt="Logo">
+        </div>
+        <div class="right-buttons">
+            <?php if (isset($_SESSION["user_name"])): ?>
+                <p>
+                    <img src="imagenes/usuario.ico" alt="Usuario" height="30">
+                    <?php echo htmlspecialchars($_SESSION["user_name"]); ?>
+                </p>
+                <a href="?logout">Cerrar sesión</a>
+            <?php else: ?>
+                <a href="login.php">Iniciar sesión</a>
+            <?php endif; ?>
+        </div>
+    </header>
 
-<div class="navbar">
-    <div class="left-buttons">
-        <button type="button" onclick="window.location.href='nuevo_tema.php'">Agregar Nuevo Tema</button>
-    </div>
-    <div class="logo">
-        <img src="imagenes/logo.png" alt="Logo"> <!-- Logo en el centro del encabezado -->
-    </div>
-    <div class="right-buttons">
-        <!-- Aquí puedes agregar otros botones si es necesario -->
-    </div>
-</div>
+    <main class="container">
+        <form action="foro.php" method="get">
+            <input type="text" name="search" placeholder="Buscar por nombre">
+            <button type="submit">Buscar</button>
+        </form>
 
-<div class="container">
-    <?php
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "proyectodb";
+        <?php if ($result->num_rows > 0): ?>
+            <?php while ($row = $result->fetch_assoc()): ?>
+                <div class="tema">
+                    <a href='tema.php?id=<?php echo htmlspecialchars($row["idtema_foro"]); ?>'>
+                        <?php echo htmlspecialchars($row["titulo"]); ?>
+                    </a>
+                    <?php if (!empty($row["imagen"])): ?>
+                        <img src="<?php echo htmlspecialchars($row["imagen"]); ?>" alt="Imagen del tema">
+                    <?php endif; ?>
+                </div>
+            <?php endwhile; ?>
+        <?php else: ?>
+            <p>No hay temas disponibles</p>
+        <?php endif; ?>
+    </main>
 
-    // Crear conexión
-    $conn = new mysqli($servername, $username, $password, $dbname);
-
-    // Verificar conexión
-    if ($conn->connect_error) {
-        die("Conexión fallida: " . $conn->connect_error);
-    }
-
-    // Realizar una consulta SQL
-    $sql = "SELECT * FROM tema_foro";
- 
-    $result = $conn->query($sql);
-
-    if ($result->num_rows > 0) {
-        // Mostrar los datos de cada fila
-        while ($row = $result->fetch_assoc()) {
-            echo "<a href='tema.php?id=" . htmlspecialchars($row["idtema_foro"]) . "'>" . htmlspecialchars($row["titulo"]) . "</a><br>";
-        }
-    } else {
-        echo "No hay temas disponibles";
-    }
-
-    $conn->close();
-    ?>
-</div>
-
-<footer>
-    <p>Derechos reservados © 2024</p>
-</footer>
-
+    <footer>
+        <p>Derechos reservados © 2024</p>
+    </footer>
 </body>
 </html>

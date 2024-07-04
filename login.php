@@ -1,17 +1,11 @@
 <?php
 session_start();
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "proyectodb";
+include 'conexion.php';
 
-// Crear conexión
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verificar conexión
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
+// Guardar la URL de referencia al llegar a la página de inicio de sesión
+if (!isset($_SESSION['referer_url']) && isset($_SERVER['HTTP_REFERER'])) {
+    $_SESSION['referer_url'] = $_SERVER['HTTP_REFERER'];
 }
 
 // Iniciar sesión
@@ -36,14 +30,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION["idusuarios"] = $row["idusuarios"];
         
         // Redirigir al usuario a la página de la que vino
-        $redirect_url = isset($_SESSION["redirect_url"]) ? $_SESSION["redirect_url"] : "moviles.php";
+        $redirect_url = isset($_SESSION['referer_url']) ? $_SESSION['referer_url'] : "index.php";
         header("Location: $redirect_url");
+        // Limpiar la URL de referencia de la sesión
+        unset($_SESSION['referer_url']);
     } else {
         echo "Nombre de usuario o contraseña incorrectos";
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>

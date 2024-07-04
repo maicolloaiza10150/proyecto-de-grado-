@@ -1,18 +1,8 @@
 <?php
 session_start(); // Iniciar la sesión
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "proyectodb";
+include 'conexion.php';
 
-// Crear conexión
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verificar conexión
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
-}
  
 // Obtener el ID del móvil de la URL
 if (isset($_GET["id"])) {
@@ -196,24 +186,48 @@ $conn->close();
         .logo img {
             height: 50px;
         }
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .user-info img {
+            width: 50px; /* Ajusta este valor para cambiar el tamaño de la imagen */
+            height: auto;
+        }
+
+        /* Estilo para la imagen del móvil */
+        .movil-img {
+            max-width: 200px; /* Ajusta este valor para cambiar el tamaño de la imagen */
+            height: auto;
+            display: block;
+            margin: auto;
+        }
     </style>
 </head>
 <body>
 
+</head>
+<body>
+
 <div class="navbar">
-    <a href="moviles.php" class="btn left">Volver</a>
+    <a href="index.php" class="btn left">Volver</a>
     <div class="logo">
         <img src="imagenes/logo.png" alt="Logo">
     </div>
     <div class="right">
         <?php
-        if (isset($_SESSION["user_name"])) {
-            echo "<img src='imagenes/usuario.ico' alt='Usuario'>";
+         if (isset($_SESSION["user_name"])) {
+            echo "<div class='user-info'>";
             echo "<p>" . $_SESSION["user_name"] . "</p>";
+            $foto = base64_encode($movil["foto"]);
+            echo "<img class='movil-img' src='data:image/jpeg;base64," . $foto . "' alt='Imagen del móvil'>";
+            echo "</div>";
         } else {
             echo "<a href='login.php' class='btn'>Iniciar sesión</a>";
         }
-        ?>
+    ?>
     </div>
 </div>
 
@@ -231,6 +245,10 @@ $conn->close();
             ?>
         </div>
         <h1>Especificaciones del Móvil</h1>
+        <?php
+        $foto = base64_encode($movil["foto"]);
+        echo "<img class='movil-img' src='data:image/jpeg;base64," . $foto . "' alt='Imagen del móvil'>";
+        ?>
         <table class="specs-table">
             <tr>
                 <th>Modelo</th>

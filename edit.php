@@ -1,18 +1,8 @@
 <?php
 session_start(); // Iniciar la sesión
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "proyectodb";
+include 'conexion.php';
 
-// Crear conexión
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verificar conexión
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
-}
 
 // Obtener el ID del móvil de la URL
 $idmovil = null;
@@ -210,7 +200,7 @@ if ($result->num_rows > 0) {
 <body>
 
 <div class="navbar">
-    <a href="moviles.php" class="btn left">Volver</a>
+    <a href="index.php" class="btn left">Volver</a>
     <a href="#" class="logo"><img src="imagenes/logo.png" alt="Logo"></a>
     <div class="right">
         <?php
